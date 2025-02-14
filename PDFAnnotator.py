@@ -1,19 +1,8 @@
 import os
 import time
-import openai
 import pandas as pd
-from dotenv import load_dotenv
 import PyPDF2
-
-# Load API Key from .env
-load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-if not OPENAI_API_KEY:
-    raise ValueError("Error: OPENAI_API_KEY is missing. Please check your .env file.")
-
-# Initialize OpenAI Client
-client = openai.OpenAI(api_key=OPENAI_API_KEY)
+import ollama
 
 # Folder Paths
 PDF_FOLDER = "scrappedPdfs/"
@@ -33,25 +22,30 @@ def extract_text_from_pdf(pdf_path):
         print(f"[Error] Could not extract text from {pdf_path}: {e}")
         return ""
 
-# Generate labels using OpenAI
+# Generate labels using Ollama
 def get_best_labels(text, max_retries=3):
     if not text.strip():
         return "No text found"
 
-    prompt = f"Provide the 3 most relevant labels for this research paper, separated by commas.\n\nHere is the content:\n{text[:2000]}\n\nLabels:"
+    prompt = f"""
+    Provide the 3 most relevant labels for this research paper, separated by commas.
+    Here is the content:
+    {text[:2000]}
+    \n\nLabels:
+    """
 
     for attempt in range(max_retries):
         try:
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+            response = ollama.chat(
+                model="phi3:mini",
                 messages=[
                     {"role": "system", "content": "You are an expert in document classification and labeling."},
                     {"role": "user", "content": prompt}
                 ]
             )
-            return response.choices[0].message.content.strip()
+            return response["message"]["content"].strip()
         except Exception as e:
-            print(f"[OpenAI API Error] {e}. Retrying ({attempt + 1}/{max_retries})...")
+            print(f"[Ollama API Error] {e}. Retrying ({attempt + 1}/{max_retries})...")
             time.sleep(2)
 
     return "Failed to generate labels"
