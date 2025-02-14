@@ -5,8 +5,6 @@ import pandas as pd
 from dotenv import load_dotenv
 import PyPDF2
 
-# Load API Key from .env
-load_dotenv()
 
 # Folder Paths
 PDF_FOLDER = "scrappedPdfs/"
